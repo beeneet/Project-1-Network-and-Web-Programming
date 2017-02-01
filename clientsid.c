@@ -45,12 +45,8 @@ int main(int argc, char *argv[]) {
     char     *szAddress;             /*  Holds remote IP address   */
     char     *szPort;                /*  Holds remote port         */
     char     *endptr;                /*  for strtol()              */
-    char      temp[MAX_LINE];
     char      preStr[MAX_LINE];                // Holds CAP\n
-    char      postStr[MAX_LINE];
-    //char      usrInput;
-    char      inputUsr[MAX_LINE];
-
+    char      postStr[2];
 
     /*  Get command line arguments  */
 
@@ -100,47 +96,7 @@ int main(int argc, char *argv[]) {
 
     /*  Get string to echo from user  */
 
-    // printf("Enter s,t or f: ");                                 //printf("Enter the string to echo: ");
-    // scanf("%c", &usrInput);
-    // printf("Entered %c", usrInput);
-    // return 0;
-    // while ( usrInput != 's' && usrInput !='t' && usrInput != 'f' ){
-    //     if ( usrInput == 's') {
-    //         printf("Enter a string: ");
-    //     } else if ( usrInput == 't') {
-    //         printf("Enter a string: ");
-    //     } else
-    //         printf("Exiting...");
-    //         exit(0);
-    // }
     printf("Input s: Enter: \n");
-
-    // int i = 0;
-    // char choice;
-    // while((choice=fgetc(stdin)) != '\n')
-    //     buffer[i++] = choice;
-    //fgets(buffer, MAX_LINE, stdin);
-    // char *newline = strchr( buffer, '\n');
-    // if ( newline )
-    //     *newline = 0;
-    //strncpy(buffer, buffer, strlen(buffer));
-    //Concatenation
-    //printf("buffer: %s", buffer);
-    //substring(buffer, buffer, 1, strlen(buffer)-1);       //Removing the newline character
-    //buffer[strlen(buffer)-1] = '\0';
-
-    //printf("temp is: %s", temp );
-    // copy_string(buffer, temp);
-    // printf("Newbuffer: %s", buffer);
-    //strcpy(buffer, temp);
-    // char *found;
-    // found = strtok(buffer,"\n");
-    // found[strlen(found)] = '\0';
-    //printf("found: %s", found );
-    //char* p = strtok(buffer, "\n")
-    //strcpy(temp, buffer);
-    //buffer[strlen(buffer)-1] = 0;
-    //buffer[strlen(buffer)] = '\0';
 
     char c;
     int i = 0;
@@ -150,23 +106,14 @@ int main(int argc, char *argv[]) {
     // insert NULL at the end of string
 
     buffer[i] = '\0';
-    // printf("to: %s", buffer);
-    // char *ptr;
-    // if ((ptr= strchr(buffer, '\n')) == NULL)
-    //     *ptr = '\0'; 
-    //removeStringTrailingNewline(buffer);
-    //printf("new: %s \n", buffer);
-    //strcpy(buffer, inputUsr);
-    // size_t len = strlen(buffer)-1;
-    // if ( buffer[len] == '\n')
-    //     buffer[len] = '\0';
-    strcpy(preStr, "CAP\\n");
-    strcpy(postStr, "\\n");
+
+    strcpy(preStr, "CAP\\n");           // Stores CAP\\n to preStr variable
+    strcpy(postStr, "\\n");             // Stores \\n to 
     strcat(preStr, buffer);
     strcat(preStr, postStr);
-    //strcpy(temp, preStr);
+    preStr[strlen(preStr)] = '\n';
 
-    printf("Sending this to server: %s \n", preStr);
+    printf("Sending this to server: %s", preStr);
 
     
     
@@ -177,12 +124,18 @@ int main(int argc, char *argv[]) {
     printf("Sent to server\n");
     Readline(conn_s, buffer, MAX_LINE-1);
 
-    //printf("Client Side %s\n", buffer );
-
-
     /*  Output echoed string  */
+        
 
-    printf("Echo response: %s\n", buffer);
+
+    printf("Echo response: %s", buffer);
+    printf("\n");
+
+    if ( close(conn_s) < 0 ) {
+        fprintf(stderr, "ECHOSERV: Error calling close()\n");
+        exit(EXIT_FAILURE);
+    }
+
 
     return EXIT_SUCCESS;
 }
@@ -198,34 +151,24 @@ void substring(char s[], char sub[], int p, int l) {
    sub[c] = '\0';
 }
 
-void copy_string(char d[], char s[]) {
-   int c = 0;
- 
-   while (s[c] != '\0') {
-      d[c] = s[c];
-      c++;
-   }
-   d[c] = '\0';
-}
-
 
 int ParseCmdLine(int argc, char *argv[], char **szAddress, char **szPort) {
 
     int n = 1;
 
     while ( n < argc ) {
-	if ( !strncmp(argv[n], "-a", 2) || !strncmp(argv[n], "-A", 2) ) {
-	    *szAddress = argv[++n];
-	}
-	else if ( !strncmp(argv[n], "-p", 2) || !strncmp(argv[n], "-P", 2) ) {
-	    *szPort = argv[++n];
-	}
-	else if ( !strncmp(argv[n], "-h", 2) || !strncmp(argv[n], "-H", 2) ) {
-	    printf("Usage:\n\n");
-	    printf("    timeclnt -a (remote IP) -p (remote port)\n\n");
-	    exit(EXIT_SUCCESS);
-	}
-	++n;
+    if ( !strncmp(argv[n], "-a", 2) || !strncmp(argv[n], "-A", 2) ) {
+        *szAddress = argv[++n];
+    }
+    else if ( !strncmp(argv[n], "-p", 2) || !strncmp(argv[n], "-P", 2) ) {
+        *szPort = argv[++n];
+    }
+    else if ( !strncmp(argv[n], "-h", 2) || !strncmp(argv[n], "-H", 2) ) {
+        printf("Usage:\n\n");
+        printf("    timeclnt -a (remote IP) -p (remote port)\n\n");
+        exit(EXIT_SUCCESS);
+    }
+    ++n;
     }
 
     return 0;

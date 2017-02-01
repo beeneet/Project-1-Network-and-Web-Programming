@@ -30,7 +30,7 @@
 #define MAX_LINE           (1000)
 
 void substring(char s[], char sub[], int p, int l) ;
-void Cap(char[]);
+void capitalize(char source[], char destination[]);
 int main(int argc, char *argv[]) {
     int       list_s;                /*  listening socket          */
     int       conn_s;                /*  connection socket         */
@@ -39,6 +39,8 @@ int main(int argc, char *argv[]) {
     char      buffer[MAX_LINE];      /*  character buffer          */
     char     *endptr;                /*  for strtol()              */
     char      temp[MAX_LINE];
+    char      lineBreak[2];
+    char      lengthChar[2];        //For storing the string value of length
 
 
     /*  Get port number from the command line, and
@@ -105,35 +107,46 @@ int main(int argc, char *argv[]) {
     printf("Connection accepted\n");
   }
 
-  
-
 
 	/*  Retrieve an input line from the connected socket
 	    then simply write it back to the same socket.     */
 
 	Readline(conn_s, buffer, MAX_LINE-1);
-  substring(buffer, buffer, 6, strlen(buffer)-7);
-  printf("New Substr: %s \n", buffer);
+  printf("Incoming %s", buffer );                 //Prints the incoming message for testing purpose
 
-    //strncpy(to, buffer+5, strlen(buffer)-7); 
-    //to[strlen(to)+1] = '\0';
-    //printf("to: %s", to);
+  substring(buffer, buffer, 6, strlen(buffer)-8);
+  printf("Client message: %s", buffer);           // Obtains actual user input after removing CAP\nxx\n
+  printf("\n");
 
-	Writeline(conn_s, buffer, strlen(buffer));
+  capitalize(buffer, buffer);                     // Capitalizes and stores value in buffer
+  printf("Capitalized: %s", buffer);              // Printing for testing purpose
 
+  int lengthOfCaptitalize = strlen(buffer);       // Obtains length of the Capitalized string
+  printf("\n");
+  printf("Length is %d\n", lengthOfCaptitalize ); // Prints the length:: for testing purpose
+
+  strcpy(lineBreak, "\\n");
+  sprintf(lengthChar, "%d", lengthOfCaptitalize);   //converting int to char for concatenation
+
+  sprintf(temp, "%s%s", lengthChar, lineBreak);     //temp = length of string + \n
+  sprintf(temp, "%s%s", temp, buffer); //Obtaining <length>\n
+  printf("temp is %s\n", temp );
+
+	Writeline(conn_s, temp, strlen(temp));           // Sending back to client
 
 	/*  Close the connected socket  */
 
 	if ( close(conn_s) < 0 ) {
 	    fprintf(stderr, "ECHOSERV: Error calling close()\n");
 	    exit(EXIT_FAILURE);
-	}
+	} else {
+      printf("Connection Closed\n");
     }
+  }
 }
 
 void substring(char s[], char sub[], int p, int l) {
    int c = 0;
- 
    while (c < l) {
       sub[c] = s[p+c-1];
       c++;
@@ -141,13 +154,13 @@ void substring(char s[], char sub[], int p, int l) {
    sub[c] = '\0';
 }
 
-// void Cap(char string[]){     
-//     int i;
-//     int x = strlen(string); // You want to get the length of the whole string.
-//     for (i=1;i<x;i++){
-//          if (isalpha(string[i]) && string[i-1] == ' '){ 
-//          // only first letters of a word.
-//              string[i]= toupper(string[i]);
-//          }
-//     }
-// }
+void capitalize(char source[], char destination[]) {
+  int l = strlen(source);
+  int c = 0;
+  while (c < l) {
+    destination[c] = toupper(source[c]);
+    c++;
+  }
+  destination[c] = '\0';
+}
+
