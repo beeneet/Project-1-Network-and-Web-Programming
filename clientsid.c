@@ -32,7 +32,8 @@
 
 int ParseCmdLine(int argc, char *argv[], char **szAddress, char **szPort);
 void substring(char[], char[], int, int);
-void inputS();
+void inputS(char[], int);
+void inputT(char [], int );
 
 
 /*  main()  */
@@ -105,7 +106,7 @@ int main(int argc, char *argv[]) {
     } else if (c == 's') {
         inputS(buffer, conn_s);
     } else {
-        printf("input t");
+        inputT(buffer, conn_s);
     }
 
     return EXIT_SUCCESS;
@@ -155,6 +156,35 @@ void inputS(char buffer[MAX_LINE], int conn_s){
         exit(EXIT_FAILURE);
     }
 
+}
+
+void inputT(char buffer[MAX_LINE], int conn_s){
+    char      preStr[MAX_LINE];                // Holds CAP\n
+    char      postStr[2];
+    printf("You have selected t!\n");
+    printf("Input s: Enter: \n");
+
+    char c;
+    int i = 0;
+
+    while (( c = getchar()) != '\n')
+        buffer[i++] = c;
+    
+    // insert NULL at the end of string
+
+    buffer[i] = '\0';
+
+    strcpy(preStr, "FILE\\n");           // Stores CAP\\n to preStr variable
+    strcpy(postStr, "\\n");             // Stores \\n to 
+    strcat(preStr, buffer);
+    strcat(preStr, postStr);
+    preStr[strlen(preStr)] = '\n';
+
+    printf("Sending this to server: %s", preStr);
+    /*  Send string to echo server, and retrieve response  */
+
+    Writeline(conn_s, preStr, strlen(preStr));
+    printf("Sent to server\n");
 }
 
 void substring(char s[], char sub[], int p, int l) {

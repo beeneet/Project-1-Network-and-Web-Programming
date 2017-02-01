@@ -32,6 +32,8 @@
 void substring(char s[], char sub[], int p, int l) ;
 void capitalize(char source[], char destination[]);
 void CAPfunction(char temp[], char buffer[]);
+unsigned long getSize(char * );
+void FILEfunction(char [], char []);
 int main(int argc, char *argv[]) {
     int       list_s;                /*  listening socket          */
     int       conn_s;                /*  connection socket         */
@@ -111,18 +113,33 @@ int main(int argc, char *argv[]) {
 	    then simply write it back to the same socket.     */
 
 	Readline(conn_s, buffer, MAX_LINE-1);
-
+  int indicator = 2;
   if (buffer[0] == 'C'){
-    printf("CAP detected\n");
-    //CAPfunction(temp, buffer);                    // Callng the CAP function. If CAP\nxxx\n is received
+    indicator = 0;                  // Callng the CAP function. If CAP\nxxx\n is received
   } else if (buffer[0] == 'F'){
+    indicator = 1;
     printf("FILE detected\n");
   }
 
+  printf("Incoming %s", buffer );                 //Prints the incoming message for testing purpose
 
-  CAPfunction(temp, buffer);                        
 
-	Writeline(conn_s, temp, strlen(temp));           // Sending back to client
+  if (indicator == 0){
+    printf("CAP detected!\n");
+    substring(buffer, buffer, 6, strlen(buffer)-8);
+    printf("Client message: %s", buffer);           // Obtains actual user input after removing CAP\nxx\n
+    printf("\n");
+    CAPfunction(temp, buffer);                    // Callng the CAP function. If CAP\nxxx\n is received
+  } else {
+    substring(buffer, buffer, 7, strlen(buffer)-9);
+    printf("Client message: %s", buffer);           // Obtains actual user input after removing CAP\nxx\n
+    printf("\n");
+    printf("FILE detected\n");
+    printf("Length: %zu\n", strlen(buffer));
+    FILEfunction(temp, buffer);
+  }
+  printf("%s\n", temp );
+  Writeline(conn_s, temp, strlen(temp));           // Sending back to client
 
 	/*  Close the connected socket  */
 
@@ -140,12 +157,6 @@ void CAPfunction(char temp[], char buffer[]){
   char      lineBreak[2];
   char      lengthChar[2];        //For storing the string value of length
 
-  printf("Incoming %s", buffer );                 //Prints the incoming message for testing purpose
-
-  substring(buffer, buffer, 6, strlen(buffer)-8);
-  printf("Client message: %s", buffer);           // Obtains actual user input after removing CAP\nxx\n
-  printf("\n");
-
   capitalize(buffer, buffer);                     // Capitalizes and stores value in buffer
   printf("Capitalized: %s", buffer);              // Printing for testing purpose
 
@@ -161,6 +172,48 @@ void CAPfunction(char temp[], char buffer[]){
   printf("temp is %s\n", temp );
 
   temp[strlen(temp)] = '\n';                        // Adding \n. Used for detecting end by Readline()
+
+}
+
+void FILEfunction(char temp[], char buffer[]){
+   char bytesChar[4];                         //For storing number of bytes as char
+   char lineBreak[2];
+   int i;
+   FILE *input;
+   //FILE *fp;
+   char get_char;
+   unsigned long abc;
+   abc = getSize(buffer);
+   char *st = (char *) malloc(abc);
+
+   input = fopen(buffer, "rb");
+   fread(st, sizeof(st), abc, input);
+   temp = (char *) malloc(abc);
+   // 
+
+   
+   //
+
+   sprintf(bytesChar, "%ld", abc);
+   strcpy(lineBreak, "\\n");
+
+   sprintf(temp, "%s%s", bytesChar, lineBreak);
+   printf("%zu\n", strlen(temp) );
+   // for (i = 0; i < abc; i ++){
+   //      printf("%c\n", st[i] );
+   //     //temp[i+8] = st[i];
+   // }
+   //
+
+   sprintf(temp, "%s%s", temp, st);
+   
+
+   temp[strlen(temp)] = '\n';
+   //printf("%s", temp );
+   fclose(input);
+   //fp = fopen("../cs556-3rd-tutorial.pdf", "wb");
+   //fwrite(st, sizeof(char), abc, fp);
+   //fclose(fp);
 
 }
 
@@ -182,4 +235,21 @@ void capitalize(char source[], char destination[]) {
   }
   destination[c] = '\0';
 }
+
+unsigned long getSize(char * filename)
+{
+    FILE *fp;
+    filename[strlen(filename)] = '\0';
+    fp = fopen(filename, "rb");
+    if (!fp){
+      return -1;
+    }
+    fseek(fp, 0, SEEK_END);
+
+    unsigned long sz = (unsigned long)ftell(fp);
+    fclose(fp);
+    printf("%ld\n", sz );
+    return sz;
+}
+
 
