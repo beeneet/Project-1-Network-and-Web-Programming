@@ -123,8 +123,6 @@ int main(int argc, char *argv[]) {
     CAPfunction(temp, buffer, conn_s);                    // Callng the CAP function. If CAP\nxxx\n is received
   } else {
     substring(buffer, buffer, 7, strlen(buffer)-9);
-    printf("Client message: %s", buffer);           // Obtains actual user input after removing CAP\nxx\n
-    printf("\n");
     FILEfunction(temp, buffer, conn_s);
   }
   
@@ -171,37 +169,40 @@ void FILEfunction(char temp[], char buffer[], int conn_s){    //This function ge
    abc = getSize(buffer);
    char st[MAX_LINE];
    input = fopen(buffer, "rb");
-   fread(st, sizeof(st), abc, input);
-   sprintf(bytesChar, "%ld", abc);
-   strcpy(lineBreak, "\\n");
-   strcat(bytesChar, lineBreak);
-   strcat(bytesChar, st);
-   printf("BytesCHAR %s\n", bytesChar );
-   bytesChar[MAX_LINE] = '\0';
-   fclose(input);
-
+   if (!(input)){
+      strcpy(bytesChar, "9\\nNOT FOUND\n");
+    } else { 
+        fread(st, sizeof(st), abc, input);
+        sprintf(bytesChar, "%ld", abc);
+        strcpy(lineBreak, "\\n");
+        strcat(bytesChar, lineBreak);
+        strcat(bytesChar, st);
+        bytesChar[MAX_LINE] = '\0';
+        fclose(input);
+    }
+  printf("%s\n", bytesChar );
    Writeline(conn_s, bytesChar, strlen(bytesChar));  
 
 }
 
-void substring(char s[], char sub[], int p, int l) {          // This function generates the substring of a string.
-   int c = 0;
-   while (c < l) {
-      sub[c] = s[p+c-1];
-      c++;
-   }
-   sub[c] = '\0';
-}
+  void substring(char s[], char sub[], int p, int l) {          // This function generates the substring of a string.
+     int c = 0;
+     while (c < l) {
+        sub[c] = s[p+c-1];
+        c++;
+     }
+     sub[c] = '\0';
+    }
 
 void capitalize(char source[], char destination[]) {        //Function for capitalizing strings. It capitalises string char by char.
-  int l = strlen(source);
-  int c = 0;
-  while (c < l) {
-    destination[c] = toupper(source[c]);
-    c++;
+    int l = strlen(source);
+    int c = 0;
+    while (c < l) {
+      destination[c] = toupper(source[c]);
+      c++;
+    }
+    destination[c] = '\0';
   }
-  destination[c] = '\0';
-}
 
 unsigned long getSize(char * filename)                      // This function generates the size of the file.
 {
@@ -215,7 +216,6 @@ unsigned long getSize(char * filename)                      // This function gen
 
     unsigned long sz = (unsigned long)ftell(fp);
     fclose(fp);
-    printf("%ld\n", sz );
     return sz;
 }
 
@@ -234,13 +234,13 @@ ssize_t Readline(int sockd, void *vptr, size_t maxlen) {    //Helper functions f
   }
   else if ( rc == 0 ) {
       if ( n == 1 )
-    return 0;
+        return 0;
       else
-    break;
+        break;
   }
   else {
       if ( errno == EINTR )
-    continue;
+        continue;
       return -1;
   }
     }
@@ -262,11 +262,11 @@ ssize_t Writeline(int sockd, const void *vptr, size_t n) {
     nleft  = n;
 
     while ( nleft > 0 ) {
-  if ( (nwritten = write(sockd, buffer, nleft)) <= 0 ) {
+      if ( (nwritten = write(sockd, buffer, nleft)) <= 0 ) {
       if ( errno == EINTR )
-    nwritten = 0;
+          nwritten = 0;
       else
-    return -1;
+          return -1;
   }
   nleft  -= nwritten;
   buffer += nwritten;

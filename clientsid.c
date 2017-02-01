@@ -29,6 +29,7 @@ ssize_t Writeline(int fc, const void *vptr, size_t maxlen);
 /*  Function declarations  */
 
 int ParseCmdLine(int argc, char *argv[], char **szAddress, char **szPort);
+unsigned long getSize(char *);
 void substring(char[], char[], int, int);
 void inputS(char[], int);
 void inputT(char [], int );
@@ -150,6 +151,7 @@ void inputS(char buffer[MAX_LINE], int conn_s){ //A function to deal with capita
 void inputT(char buffer[MAX_LINE], int conn_s){     //A function to deal with creating files according to the input.
     char      preStr[MAX_LINE];                     // Holds CAP\n
     char      postStr[2];
+    char      userInput [50];
     printf("You have selected t!\n");
     printf("Enter: \n");
 
@@ -163,6 +165,15 @@ void inputT(char buffer[MAX_LINE], int conn_s){     //A function to deal with cr
 
     buffer[i] = '\0';
 
+    int k = 0;
+    while (k<strlen(buffer)){
+        userInput[k]= buffer[k];
+        k = k + 1;
+    }
+    userInput[k] = '\0';
+
+    // strncpy(userInput, buffer, strlen(buffer));
+    // userInput[strlen(userInput)] = '\0';
     strcpy(preStr, "FILE\\n\0");           // Stores CAP\\n to preStr variable
     strcpy(postStr, "\\n\0");             // Stores \\n to 
     strcat(preStr, buffer);
@@ -173,15 +184,27 @@ void inputT(char buffer[MAX_LINE], int conn_s){     //A function to deal with cr
 
     Writeline(conn_s, preStr, strlen(preStr));      //Concatenating and sending the output to the server
 
-    Readline(conn_s, buffer, MAX_LINE-1);
-    int j = 0;
-    char charCheck[10];
-    while (buffer[j] != '\n'){                      //Searching for newline character to detect the file size.
-        // if (buffer[j] != '\n') {
-            charCheck[j] = buffer[j];
-            j = j + 1;    
+    Readline(conn_s, buffer, MAX_LINE);
+    if ((buffer[0] == '9') && (buffer[1]=='\\')){
+        printf("NOT FOUND\n" );
+    } else {
+        FILE *fp;
+        int j = 0;
+        char charCheck[10];
+        while (buffer[j] != '\\'){                      //Searching for newline character to detect the file size.
+                charCheck[j] = buffer[j];               //charCheck stores the size of the file.
+                j = j + 1;    
+        }
+        size_t lengthCheck = strlen(charCheck);
+        size_t bufferLength = strlen(buffer);
+        substring(buffer, buffer, lengthCheck+3, bufferLength-lengthCheck-2);
+
+        fp = fopen(userInput, "wb");
+        int oksize;
+        sscanf(charCheck, "%d", &oksize);
+        fwrite(buffer, sizeof(char), oksize, fp);
+        fclose(fp);
     }
-    printf("char check %s\n", charCheck );
 
 
     /*  Output echoed string  */
@@ -264,4 +287,20 @@ ssize_t Writeline(int sockd, const void *vptr, size_t n) {
     }
 
     return n;
+}
+
+unsigned long getSize(char * filename)                      // This function generates the size of the file.
+{
+    FILE *fp;
+    filename[strlen(filename)] = '\0';
+    fp = fopen(filename, "rb");
+    if (!fp){
+      return -1;
+    }
+    fseek(fp, 0, SEEK_END);
+
+    unsigned long sz = (unsigned long)ftell(fp);
+    fclose(fp);
+    printf("%ld\n", sz );
+    return sz;
 }
