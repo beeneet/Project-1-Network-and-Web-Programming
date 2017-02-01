@@ -31,6 +31,7 @@
 
 void substring(char s[], char sub[], int p, int l) ;
 void capitalize(char source[], char destination[]);
+void CAPfunction(char temp[], char buffer[]);
 int main(int argc, char *argv[]) {
     int       list_s;                /*  listening socket          */
     int       conn_s;                /*  connection socket         */
@@ -39,9 +40,7 @@ int main(int argc, char *argv[]) {
     char      buffer[MAX_LINE];      /*  character buffer          */
     char     *endptr;                /*  for strtol()              */
     char      temp[MAX_LINE];
-    char      lineBreak[2];
-    char      lengthChar[2];        //For storing the string value of length
-
+    
 
     /*  Get port number from the command line, and
         set to default port if no arguments were supplied  */
@@ -112,6 +111,35 @@ int main(int argc, char *argv[]) {
 	    then simply write it back to the same socket.     */
 
 	Readline(conn_s, buffer, MAX_LINE-1);
+
+  if (buffer[0] == 'C'){
+    printf("CAP detected\n");
+    //CAPfunction(temp, buffer);                    // Callng the CAP function. If CAP\nxxx\n is received
+  } else if (buffer[0] == 'F'){
+    printf("FILE detected\n");
+  }
+
+
+  CAPfunction(temp, buffer);                        
+
+	Writeline(conn_s, temp, strlen(temp));           // Sending back to client
+
+	/*  Close the connected socket  */
+
+	if ( close(conn_s) < 0 ) {
+	    fprintf(stderr, "ECHOSERV: Error calling close()\n");
+	    exit(EXIT_FAILURE);
+	} else {
+      printf("Connection Closed\n");
+    }
+  }
+}
+
+void CAPfunction(char temp[], char buffer[]){
+
+  char      lineBreak[2];
+  char      lengthChar[2];        //For storing the string value of length
+
   printf("Incoming %s", buffer );                 //Prints the incoming message for testing purpose
 
   substring(buffer, buffer, 6, strlen(buffer)-8);
@@ -132,17 +160,8 @@ int main(int argc, char *argv[]) {
   sprintf(temp, "%s%s", temp, buffer); //Obtaining <length>\n
   printf("temp is %s\n", temp );
 
-	Writeline(conn_s, temp, strlen(temp));           // Sending back to client
+  temp[strlen(temp)] = '\n';                        // Adding \n. Used for detecting end by Readline()
 
-	/*  Close the connected socket  */
-
-	if ( close(conn_s) < 0 ) {
-	    fprintf(stderr, "ECHOSERV: Error calling close()\n");
-	    exit(EXIT_FAILURE);
-	} else {
-      printf("Connection Closed\n");
-    }
-  }
 }
 
 void substring(char s[], char sub[], int p, int l) {

@@ -32,6 +32,7 @@
 
 int ParseCmdLine(int argc, char *argv[], char **szAddress, char **szPort);
 void substring(char[], char[], int, int);
+void inputS();
 
 
 /*  main()  */
@@ -45,8 +46,6 @@ int main(int argc, char *argv[]) {
     char     *szAddress;             /*  Holds remote IP address   */
     char     *szPort;                /*  Holds remote port         */
     char     *endptr;                /*  for strtol()              */
-    char      preStr[MAX_LINE];                // Holds CAP\n
-    char      postStr[2];
 
     /*  Get command line arguments  */
 
@@ -92,10 +91,33 @@ int main(int argc, char *argv[]) {
 	printf("ECHOCLNT: Error calling connect()\n");
 	exit(EXIT_FAILURE);
     }
+    int c;
+    int d;
+    do {
+         c = getchar();             // Gets the first input
+         d = getchar();             // Gets the <enter> input, which is ignored
+    } while (((c !='s') && (c != 't') && (c != 'q')));
 
+    printf("\n");
+    if (c == 'q'){
+        printf("Quitting...\n");
+        return 0;
+    } else if (c == 's') {
+        inputS(buffer, conn_s);
+    } else {
+        printf("input t");
+    }
+
+    return EXIT_SUCCESS;
+
+}
 
     /*  Get string to echo from user  */
+void inputS(char buffer[MAX_LINE], int conn_s){
 
+    char      preStr[MAX_LINE];                // Holds CAP\n
+    char      postStr[2];
+    printf("You have selected s!\n");
     printf("Input s: Enter: \n");
 
     char c;
@@ -103,6 +125,7 @@ int main(int argc, char *argv[]) {
 
     while (( c = getchar()) != '\n')
         buffer[i++] = c;
+    
     // insert NULL at the end of string
 
     buffer[i] = '\0';
@@ -114,10 +137,6 @@ int main(int argc, char *argv[]) {
     preStr[strlen(preStr)] = '\n';
 
     printf("Sending this to server: %s", preStr);
-
-    
-    
-
     /*  Send string to echo server, and retrieve response  */
 
     Writeline(conn_s, preStr, strlen(preStr));
@@ -136,10 +155,7 @@ int main(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     }
 
-
-    return EXIT_SUCCESS;
 }
-
 
 void substring(char s[], char sub[], int p, int l) {
    int c = 0;
@@ -154,22 +170,7 @@ void substring(char s[], char sub[], int p, int l) {
 
 int ParseCmdLine(int argc, char *argv[], char **szAddress, char **szPort) {
 
-    int n = 1;
-
-    while ( n < argc ) {
-    if ( !strncmp(argv[n], "-a", 2) || !strncmp(argv[n], "-A", 2) ) {
-        *szAddress = argv[++n];
-    }
-    else if ( !strncmp(argv[n], "-p", 2) || !strncmp(argv[n], "-P", 2) ) {
-        *szPort = argv[++n];
-    }
-    else if ( !strncmp(argv[n], "-h", 2) || !strncmp(argv[n], "-H", 2) ) {
-        printf("Usage:\n\n");
-        printf("    timeclnt -a (remote IP) -p (remote port)\n\n");
-        exit(EXIT_SUCCESS);
-    }
-    ++n;
-    }
-
+    *szAddress = argv[1];                              // address is the second argument
+    *szPort = argv[2];                                 // port is the third argument
     return 0;
 }
