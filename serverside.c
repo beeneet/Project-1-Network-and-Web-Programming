@@ -1,27 +1,24 @@
-/*
-
-  ECHOSERV.C
-  ==========
-  (c) Paul Griffiths, 1999
-  Email: mail@paulgriffiths.net
-  
-  Simple TCP/IP echo server.
-
-*/
-
-
 #include <sys/socket.h>       /*  socket definitions        */
 #include <sys/types.h>        /*  socket types              */
 #include <arpa/inet.h>        /*  inet (3) funtions         */
 #include <unistd.h>           /*  misc. UNIX functions      */
-
-#include "helper.h"           /*  our own helper functions  */
-#include "helper.c"
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
+#include "helper.h"
+#include <unistd.h>
+#include <errno.h>
+#ifndef PG_SOCK_HELP
+#define PG_SOCK_HELP
+#include <unistd.h>             /*  for ssize_t data type  */
+#define LISTENQ        (1024)   /*  Backlog for listen()   */
+/*  Function declarations  */
+ssize_t Readline(int fd, void *vptr, size_t maxlen);
+ssize_t Writeline(int fc, const void *vptr, size_t maxlen);
+#endif 
+
+
 
 
 /*  Global constants  */
@@ -31,9 +28,9 @@
 
 void substring(char s[], char sub[], int p, int l) ;
 void capitalize(char source[], char destination[]);
-void CAPfunction(char temp[], char buffer[]);
+void CAPfunction(char temp[], char buffer[], int);
 unsigned long getSize(char * );
-void FILEfunction(char [], char []);
+void FILEfunction(char [], char [], int);
 int main(int argc, char *argv[]) {
     int       list_s;                /*  listening socket          */
     int       conn_s;                /*  connection socket         */
@@ -118,29 +115,20 @@ int main(int argc, char *argv[]) {
     indicator = 0;                  // Callng the CAP function. If CAP\nxxx\n is received
   } else if (buffer[0] == 'F'){
     indicator = 1;
-    printf("FILE detected\n");
   }
 
-  printf("Incoming %s", buffer );                 //Prints the incoming message for testing purpose
-
-
   if (indicator == 0){
-    printf("CAP detected!\n");
     substring(buffer, buffer, 6, strlen(buffer)-8);
-    printf("Client message: %s", buffer);           // Obtains actual user input after removing CAP\nxx\n
     printf("\n");
-    CAPfunction(temp, buffer);                    // Callng the CAP function. If CAP\nxxx\n is received
+    CAPfunction(temp, buffer, conn_s);                    // Callng the CAP function. If CAP\nxxx\n is received
   } else {
     substring(buffer, buffer, 7, strlen(buffer)-9);
     printf("Client message: %s", buffer);           // Obtains actual user input after removing CAP\nxx\n
     printf("\n");
-    printf("FILE detected\n");
-    printf("Length: %zu\n", strlen(buffer));
-    FILEfunction(temp, buffer);
+    FILEfunction(temp, buffer, conn_s);
   }
-  printf("%s\n", temp );
-  Writeline(conn_s, temp, strlen(temp));           // Sending back to client
-
+  
+ 
 	/*  Close the connected socket  */
 
 	if ( close(conn_s) < 0 ) {
@@ -152,72 +140,51 @@ int main(int argc, char *argv[]) {
   }
 }
 
-void CAPfunction(char temp[], char buffer[]){
+void CAPfunction(char temp[], char buffer[], int conn_s){
 
   char      lineBreak[2];
   char      lengthChar[2];        //For storing the string value of length
 
   capitalize(buffer, buffer);                     // Capitalizes and stores value in buffer
-  printf("Capitalized: %s", buffer);              // Printing for testing purpose
 
   int lengthOfCaptitalize = strlen(buffer);       // Obtains length of the Capitalized string
-  printf("\n");
-  printf("Length is %d\n", lengthOfCaptitalize ); // Prints the length:: for testing purpose
 
   strcpy(lineBreak, "\\n");
   sprintf(lengthChar, "%d", lengthOfCaptitalize);   //converting int to char for concatenation
 
   sprintf(temp, "%s%s", lengthChar, lineBreak);     //temp = length of string + \n
   sprintf(temp, "%s%s", temp, buffer); //Obtaining <length>\n
-  printf("temp is %s\n", temp );
 
   temp[strlen(temp)] = '\n';                        // Adding \n. Used for detecting end by Readline()
 
+   Writeline(conn_s, temp, strlen(temp));  
+
 }
 
-void FILEfunction(char temp[], char buffer[]){
-   char bytesChar[4];                         //For storing number of bytes as char
+void FILEfunction(char temp[], char buffer[], int conn_s){    //This function gets the contents of the file, concatenates it and sends it back to the client for creating a file.
+   char bytesChar[MAX_LINE];                                  //For storing number of bytes as char
    char lineBreak[2];
    int i;
    FILE *input;
-   //FILE *fp;
-   char get_char;
+   char newInt[MAX_LINE];
    unsigned long abc;
    abc = getSize(buffer);
-   char *st = (char *) malloc(abc);
-
+   char st[MAX_LINE];
    input = fopen(buffer, "rb");
    fread(st, sizeof(st), abc, input);
-   temp = (char *) malloc(abc);
-   // 
-
-   
-   //
-
    sprintf(bytesChar, "%ld", abc);
    strcpy(lineBreak, "\\n");
-
-   sprintf(temp, "%s%s", bytesChar, lineBreak);
-   printf("%zu\n", strlen(temp) );
-   // for (i = 0; i < abc; i ++){
-   //      printf("%c\n", st[i] );
-   //     //temp[i+8] = st[i];
-   // }
-   //
-
-   sprintf(temp, "%s%s", temp, st);
-   
-
-   temp[strlen(temp)] = '\n';
-   //printf("%s", temp );
+   strcat(bytesChar, lineBreak);
+   strcat(bytesChar, st);
+   printf("BytesCHAR %s\n", bytesChar );
+   bytesChar[MAX_LINE] = '\0';
    fclose(input);
-   //fp = fopen("../cs556-3rd-tutorial.pdf", "wb");
-   //fwrite(st, sizeof(char), abc, fp);
-   //fclose(fp);
+
+   Writeline(conn_s, bytesChar, strlen(bytesChar));  
 
 }
 
-void substring(char s[], char sub[], int p, int l) {
+void substring(char s[], char sub[], int p, int l) {          // This function generates the substring of a string.
    int c = 0;
    while (c < l) {
       sub[c] = s[p+c-1];
@@ -226,7 +193,7 @@ void substring(char s[], char sub[], int p, int l) {
    sub[c] = '\0';
 }
 
-void capitalize(char source[], char destination[]) {
+void capitalize(char source[], char destination[]) {        //Function for capitalizing strings. It capitalises string char by char.
   int l = strlen(source);
   int c = 0;
   while (c < l) {
@@ -236,7 +203,7 @@ void capitalize(char source[], char destination[]) {
   destination[c] = '\0';
 }
 
-unsigned long getSize(char * filename)
+unsigned long getSize(char * filename)                      // This function generates the size of the file.
 {
     FILE *fp;
     filename[strlen(filename)] = '\0';
@@ -252,4 +219,59 @@ unsigned long getSize(char * filename)
     return sz;
 }
 
+ssize_t Readline(int sockd, void *vptr, size_t maxlen) {    //Helper functions for reading line
+    ssize_t n, rc;
+    char    c, *buffer;
+
+    buffer = vptr;
+
+    for ( n = 1; n < maxlen; n++ ) {
+  
+  if ( (rc = read(sockd, &c, 1)) == 1 ) {
+      *buffer++ = c;
+      if ( c == '\n' )
+    break;
+  }
+  else if ( rc == 0 ) {
+      if ( n == 1 )
+    return 0;
+      else
+    break;
+  }
+  else {
+      if ( errno == EINTR )
+    continue;
+      return -1;
+  }
+    }
+
+    *buffer = 0;
+    return n;
+}
+
+
+/*  Write a line to a socket  */
+
+ssize_t Writeline(int sockd, const void *vptr, size_t n) {
+    size_t      nleft;
+    ssize_t     nwritten;
+    char *temp_buffer;
+    const char *buffer;
+
+    buffer = vptr;
+    nleft  = n;
+
+    while ( nleft > 0 ) {
+  if ( (nwritten = write(sockd, buffer, nleft)) <= 0 ) {
+      if ( errno == EINTR )
+    nwritten = 0;
+      else
+    return -1;
+  }
+  nleft  -= nwritten;
+  buffer += nwritten;
+    }
+
+    return n;
+}
 
